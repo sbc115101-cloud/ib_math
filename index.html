@@ -1,0 +1,802 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>삼각형 주문하기</title>
+<meta name="description" content="변의 길이와 각의 크기를 주문하면 세 친구가 그린 삼각형을 비교해 보며 삼각형과 직각삼각형의 합동조건을 탐구하는 웹사이트">
+<meta property="og:title" content="삼각형 주문하기">
+<meta property="og:description" content="몇 개를, 어떤 것을 알면 두 삼각형이 같다고 할 수 있을까?">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath d='M8 54 L56 54 L40 12 Z' fill='%23DCE7F8' stroke='%231E2761' stroke-width='5' stroke-linejoin='round'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;600;700&display=swap">
+<style>
+:root{
+  --bg:#EDF0F7; --paper:#FFFFFF; --ink:#1E2761; --ink-2:#4B557A; --muted:#8A93AE;
+  --rule:#D9DFEC; --grid:#E3EAF6; --grid-5:#C9D6EC;
+  --field:#FFFFFF; --field-off:#F1F3F8;
+  --t1:#C8372D; --t2:#C2650C; --t3:#22768A; --ok:#2E7D4F; --warn:#9A4A12;
+  --focus:#2F5BB7; --primary:#1E2761; --on-primary:#FFFFFF;
+  color-scheme:light;
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    --bg:#0A0F2A; --paper:#111939; --ink:#E8ECFA; --ink-2:#AEB7D3; --muted:#717CA3;
+    --rule:#28325F; --grid:#1A2450; --grid-5:#2C3972;
+    --field:#141D46; --field-off:#0E1535;
+    --t1:#FF8073; --t2:#F5A04A; --t3:#58C8DB; --ok:#66D598; --warn:#F5A04A;
+    --focus:#8FB0FF; --primary:#E8ECFA; --on-primary:#111939;
+    color-scheme:dark;
+  }
+}
+:root[data-theme="dark"]{
+  --bg:#0A0F2A; --paper:#111939; --ink:#E8ECFA; --ink-2:#AEB7D3; --muted:#717CA3;
+  --rule:#28325F; --grid:#1A2450; --grid-5:#2C3972;
+  --field:#141D46; --field-off:#0E1535;
+  --t1:#FF8073; --t2:#F5A04A; --t3:#58C8DB; --ok:#66D598; --warn:#F5A04A;
+  --focus:#8FB0FF; --primary:#E8ECFA; --on-primary:#111939;
+  color-scheme:dark;
+}
+:root{
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*,*::before,*::after{box-sizing:inherit}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic","Noto Sans KR",sans-serif;
+  font-size:16px; line-height:1.55; -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1180px; margin:0 auto; padding:28px 20px 40px}
+header.top{margin-bottom:22px}
+header.top h1{font-size:clamp(26px,4vw,36px); line-height:1.2; margin:0 0 6px; font-weight:700; letter-spacing:-0.01em}
+header.top p{margin:0; color:var(--ink-2); max-width:62ch}
+
+.layout{display:grid; gap:20px; grid-template-columns:1fr}
+@media (min-width:920px){ .layout{grid-template-columns:340px minmax(0,1fr); align-items:start} }
+
+/* 주문서 */
+.slip{background:var(--paper); border:1px solid var(--rule); border-radius:16px; padding:20px 18px 18px}
+.slip h2{font-size:20px; margin:0 0 2px}
+.modes{display:inline-flex; gap:4px; margin-top:16px; padding:4px; background:var(--paper); border:1.5px solid var(--rule); border-radius:12px}
+.modes button{border:0; background:transparent; color:var(--ink-2); font-weight:700; font-size:16px; padding:8px 18px; border-radius:9px}
+.modes button[aria-pressed="true"]{background:var(--ink); color:var(--paper)}
+.row .nm{line-height:1.15}
+.nm .hyp{display:block; font-size:11px; font-weight:600; color:var(--ink-2)}
+.fixed-tag{font-size:14px; font-weight:600; color:var(--ink); white-space:nowrap}
+.row.fixed .num{background:var(--field-off)}
+.row.fixed .num input{color:var(--ink)}
+.slip .count{margin:0 0 16px; color:var(--ink-2); font-size:14px}
+.slip .count b{color:var(--ink); font-size:16px}
+fieldset{border:0; margin:0 0 12px; padding:0}
+legend{font-size:14px; font-weight:600; color:var(--ink-2); padding:0; margin-bottom:6px}
+.row{display:grid; grid-template-columns:44px minmax(0,1fr) auto; align-items:center; gap:10px; margin-bottom:8px}
+.row .nm{font-weight:700; font-size:17px}
+.num{display:flex; align-items:center; background:var(--field); border:1.5px solid var(--rule); border-radius:10px; padding:0 10px; height:42px}
+.num:focus-within{border-color:var(--focus); box-shadow:0 0 0 3px color-mix(in srgb,var(--focus) 22%,transparent)}
+.num input{flex:1; min-width:0; border:0; background:transparent; color:var(--ink); font:inherit; font-size:17px; font-weight:600; outline:none; font-variant-numeric:tabular-nums}
+.num input::-webkit-outer-spin-button,.num input::-webkit-inner-spin-button{-webkit-appearance:none; margin:0}
+.num input[type=number]{-moz-appearance:textfield}
+.num .unit{color:var(--muted); font-size:15px; margin-left:4px}
+.none{display:flex; align-items:center; gap:6px; font-size:14px; color:var(--ink-2); cursor:pointer; user-select:none; white-space:nowrap}
+.none input{width:18px; height:18px; accent-color:var(--ink); margin:0}
+.row.off .nm{color:var(--muted)}
+.row.off .num{background:var(--field-off); border-style:dashed}
+.row.off .num input{color:var(--muted)}
+.err{color:var(--t1); font-size:14px; min-height:0; margin:0 0 8px}
+.err:empty{display:none}
+
+button{font:inherit; cursor:pointer}
+button:focus-visible,.chip:focus-visible,.none input:focus-visible{outline:3px solid var(--focus); outline-offset:2px}
+.primary{width:100%; height:48px; border:0; border-radius:12px; background:var(--primary); color:var(--on-primary); font-size:17px; font-weight:700}
+.primary:active{transform:translateY(1px)}
+
+.presets{margin-top:18px; padding-top:14px; border-top:1.5px dashed var(--rule)}
+.presets h3{font-size:15px; margin:0 0 8px}
+.pgroup{margin-bottom:10px}
+.pgroup .gl{font-size:13px; color:var(--muted); margin-bottom:5px}
+.chips{display:flex; flex-wrap:wrap; gap:6px}
+.chip{border:1.5px solid var(--rule); background:var(--paper); color:var(--ink); border-radius:999px; padding:5px 12px; font-size:14px; line-height:1.3}
+.chip:hover{border-color:var(--ink-2)}
+
+/* 결과 */
+.result{min-width:0}
+.order{font-size:clamp(20px,2.6vw,26px); font-weight:700; margin:2px 0 4px; line-height:1.35}
+.order .k{color:var(--ink-2); font-weight:500; font-size:.72em; margin-right:6px}
+.prompt{margin:0 0 14px; color:var(--ink-2)}
+.sheet{position:relative; background:var(--paper); border:1px solid var(--rule); border-radius:10px; overflow:hidden; min-height:220px}
+.sheet svg{display:block; width:100%; height:auto}
+.sheet .empty{padding:56px 24px; text-align:center; color:var(--ink-2)}
+.sheet .empty b{display:block; color:var(--ink); font-size:19px; margin-bottom:4px}
+.scale-note{position:absolute; right:10px; top:8px; font-size:12px; color:var(--muted); background:var(--paper); padding:0 4px}
+
+.tools{display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin:14px 0}
+.tbtn{height:42px; padding:0 16px; border-radius:10px; border:1.5px solid var(--rule); background:var(--paper); color:var(--ink); font-weight:600; font-size:15px}
+.tbtn.main{background:var(--primary); color:var(--on-primary); border-color:var(--primary)}
+.tbtn[aria-pressed="true"]{border-color:var(--ink); box-shadow:inset 0 0 0 1.5px var(--ink)}
+.seg{display:inline-flex; border:1.5px solid var(--rule); border-radius:10px; overflow:hidden; margin-left:auto}
+.seg button{height:39px; padding:0 12px; border:0; background:var(--paper); color:var(--ink-2); font-size:14px; font-weight:600}
+.seg button[aria-pressed="true"]{background:var(--ink); color:var(--paper)}
+@media (max-width:560px){ .seg{margin-left:0} }
+[hidden]{display:none !important}
+
+.verdict{display:grid; grid-template-columns:auto 1fr; gap:4px 16px; align-items:start; padding:18px 20px; border-radius:14px;
+  background:color-mix(in srgb,var(--tone) 9%,var(--paper)); border:1.5px solid color-mix(in srgb,var(--tone) 35%,transparent)}
+.verdict .mark{grid-row:span 3; width:56px; height:56px; border-radius:50%; display:grid; place-items:center;
+  font-size:34px; font-weight:700; color:var(--tone); border:3px solid var(--tone); line-height:1}
+.verdict h3{margin:2px 0 0; font-size:21px; color:var(--tone); line-height:1.35}
+.verdict p{margin:4px 0 0; max-width:64ch}
+.verdict .rule{margin-top:10px; padding-top:10px; border-top:1px solid color-mix(in srgb,var(--tone) 25%,transparent); color:var(--ink-2)}
+.verdict .rule b{color:var(--ink)}
+@media (prefers-reduced-motion:no-preference){
+  .verdict.show{animation:pop .28s ease-out}
+  @keyframes pop{from{opacity:0; transform:translateY(6px)}to{opacity:1; transform:none}}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>삼각형 주문하기</h1>
+    <p id="sub">변 3개와 각 3개, 모두 6개의 정보 가운데 무엇을 알려 주면 누가 그려도 같은 삼각형이 나올까요?</p>
+    <div class="modes" role="group" aria-label="삼각형 종류">
+      <button type="button" data-kind="any" aria-pressed="true">모든 삼각형</button>
+      <button type="button" data-kind="right" aria-pressed="false">직각삼각형</button>
+    </div>
+  </header>
+
+  <div class="layout">
+    <section class="slip" aria-labelledby="slip-h">
+      <h2 id="slip-h">주문서</h2>
+      <p class="count" id="countLine"></p>
+      <fieldset id="fs-ang"><legend>각의 크기</legend></fieldset>
+      <fieldset id="fs-side"><legend>변의 길이</legend></fieldset>
+      <p class="err" id="formErr" role="alert"></p>
+      <button class="primary" id="make" type="button">삼각형 만들기</button>
+
+      <div class="presets">
+        <h3>빠른 주문</h3>
+        <div id="presetBox"></div>
+      </div>
+    </section>
+
+    <section class="result" aria-live="polite">
+      <p class="order" id="orderLine"></p>
+      <p class="prompt" id="prompt"></p>
+      <div class="sheet" id="sheet"></div>
+      <div class="tools" id="tools">
+        <button class="tbtn main" id="reveal" type="button">재어 보기</button>
+        <button class="tbtn" id="overlay" type="button" aria-pressed="false">겹쳐 보기</button>
+        <div class="seg" id="seg" role="group" aria-label="예시 삼각형의 모양">
+          <button type="button" data-mode="similar" aria-pressed="true">비슷한 모양</button>
+          <button type="button" data-mode="diverse" aria-pressed="false">다양한 모양</button>
+        </div>
+      </div>
+      <div class="verdict" id="verdict" hidden></div>
+    </section>
+  </div>
+</div>
+
+<script>
+(function(){
+const $ = s => document.querySelector(s);
+const V = ['A','B','C'];
+const SN = ['BC','CA','AB'];          // 변 i는 꼭짓점 i의 대변
+const DEG = Math.PI/180;
+const REF = [45,60,75];
+const COL = ['var(--t1)','var(--t2)','var(--t3)'];
+const NUM = ['①','②','③'];
+
+const FIELDS = [
+  {key:'A',  kind:'ang',  i:0, label:'∠A', unit:'°'},
+  {key:'B',  kind:'ang',  i:1, label:'∠B', unit:'°'},
+  {key:'C',  kind:'ang',  i:2, label:'∠C', unit:'°'},
+  {key:'AB', kind:'side', i:2, label:'AB', unit:'cm'},
+  {key:'BC', kind:'side', i:0, label:'BC', unit:'cm'},
+  {key:'CA', kind:'side', i:1, label:'CA', unit:'cm'},
+];
+
+const PRESETS = [
+  ['정보 1개', [['한 변', {AB:8}], ['한 각', {A:45}]]],
+  ['정보 2개', [['두 변', {AB:8, CA:7.2}], ['한 변과 한 각', {AB:8, A:45}], ['두 각', {A:45, B:60}]]],
+  ['정보 3개', [['세 변', {AB:8, BC:5.9, CA:7.2}], ['두 변과 끼인각', {AB:8, CA:7.2, A:45}],
+               ['한 변과 양 끝 각', {AB:8, A:45, B:60}], ['한 변과 두 각', {AB:8, A:45, C:75}],
+               ['두 변과 끼이지 않은 각', {AB:8, BC:6, A:45}], ['세 각', {A:45, B:60, C:75}]]],
+];
+
+const PRESETS_RIGHT = [
+  ['직각 말고 정보 1개', [['빗변', {AB:10}], ['직각을 낀 한 변', {BC:6}], ['한 예각', {A:37}]]],
+  ['직각 말고 정보 2개', [['빗변과 한 예각', {AB:10, A:37}], ['빗변과 다른 한 변', {AB:10, BC:6}],
+                        ['직각을 낀 두 변', {BC:6, CA:8}], ['직각을 낀 한 변과 한 예각', {BC:6, B:53}], ['두 예각', {A:37, B:53}]]],
+];
+const SUB = {
+  any:'변 3개와 각 3개, 모두 6개의 정보 가운데 무엇을 알려 주면 누가 그려도 같은 삼각형이 나올까요?',
+  right:'∠C = 90°는 이미 알고 있어요. 직각 말고 무엇을 더 알려 주면 누가 그려도 같은 직각삼각형이 나올까요?',
+};
+const RULES = {
+  SSS:['SSS 합동', '세 변의 길이가 각각 같으면 삼각형은 하나로 정해져요.'],
+  SAS:['SAS 합동', '두 변의 길이와 그 끼인각의 크기가 각각 같으면 삼각형은 하나로 정해져요.'],
+  ASA:['ASA 합동', '한 변의 길이와 그 양 끝 각의 크기가 각각 같으면 삼각형은 하나로 정해져요.'],
+};
+
+const state = {mode:'similar', seed:0, revealed:false, overlay:false, right:false};
+const NAME = () => state.right ? '직각삼각형' : '삼각형';
+let ovShared = [false,false,false];
+let current = null;
+
+/* ---------- 수 다루기 ---------- */
+const clamp = (x,a,b) => Math.max(a, Math.min(b, x));
+function fmt(x){
+  const r = Math.round(x*10)/10;
+  return Math.abs(r - Math.round(r)) < 1e-9 ? String(Math.round(r)) : r.toFixed(1);
+}
+const idx = arr => [0,1,2].filter(i => arr[i] != null);
+const ends = i => [(i+1)%3, (i+2)%3];
+const near = (a,b) => Math.abs(a-b) <= Math.max(0.06, 0.015*b);
+function rng(seed){
+  let a = seed>>>0;
+  return () => { a |= 0; a = a + 0x6D2B79F5 | 0; let t = Math.imul(a ^ a>>>15, 1|a);
+    t = t + Math.imul(t ^ t>>>7, 61|t) ^ t; return ((t ^ t>>>14)>>>0)/4294967296; };
+}
+
+/* ---------- 삼각형 계산 ---------- */
+function fromSSS(s){
+  const [a,b,c] = s;
+  const A = Math.acos(clamp((b*b+c*c-a*a)/(2*b*c),-1,1))/DEG;
+  const B = Math.acos(clamp((a*a+c*c-b*b)/(2*a*c),-1,1))/DEG;
+  return {ang:[A,B,180-A-B], side:[a,b,c]};
+}
+function fromAngles(ang, i, si){
+  const k = si/Math.sin(ang[i]*DEG);
+  return {ang:[...ang], side:ang.map(x => k*Math.sin(x*DEG))};
+}
+const imp = reason => ({status:'impossible', reason});
+
+function solve(g){
+  const res = solveCore(g);
+  if (state.right && res.status === 'unique'){
+    if (res.rule === 'SSA1' && res.x === 2) res.rule = 'RHS';
+    else if ((res.rule === 'AAS' || res.rule === 'ASA') && res.sideIdx === 2) res.rule = 'RHA';
+  }
+  return res;
+}
+function solveCore(g){
+  const ga = g.ang, gs = g.side, KA = idx(ga), KS = idx(gs);
+  if (!KA.length && !KS.length) return {status:'empty'};
+  if (state.right){
+    if (KA.length === 1 && !KS.length) return {status:'empty'};
+    for (const i of [0,1]) if (ga[i] != null && !(ga[i] > 0 && ga[i] < 90)) return imp(`직각삼각형에서 ∠${V[i]}는 0°보다 크고 90°보다 작은 예각이어야 해요.`);
+    if (ga[0] != null && ga[1] != null && Math.abs(ga[0]+ga[1]-90) > 0.5) return imp(`두 예각 ∠A와 ∠B의 합은 90°여야 해요. 지금은 ${fmt(ga[0]+ga[1])}°예요.`);
+    const legs = [gs[0], gs[1]].filter(x => x != null);
+    if (gs[2] != null && legs.some(x => x >= gs[2])) return imp('빗변 AB는 직각삼각형에서 가장 긴 변이에요. AB를 다른 변보다 길게 적어 주세요.');
+  }
+  for (const i of KA) if (!(ga[i] > 0 && ga[i] < 180)) return imp(`∠${V[i]}의 크기는 0°보다 크고 180°보다 작아야 해요.`);
+  for (const i of KS) if (!(gs[i] > 0)) return imp(`변 ${SN[i]}의 길이는 0보다 커야 해요.`);
+
+  const sumA = KA.reduce((s,i) => s+ga[i], 0);
+  let ang = null;
+  if (KA.length === 3){
+    if (Math.abs(sumA-180) > 0.5) return imp(`세 각의 합이 ${fmt(sumA)}°예요. 삼각형의 세 각의 합은 180°여야 해요.`);
+    ang = [...ga];
+  } else if (KA.length === 2){
+    if (sumA >= 180 - 1e-6) return imp(`두 각의 합이 ${fmt(sumA)}°라서 나머지 한 각이 남지 않아요. 두 각의 합은 180°보다 작아야 해요.`);
+    ang = [0,1,2].map(i => ga[i] != null ? ga[i] : 180-sumA);
+  }
+
+  if (KS.length === 3){
+    const mx = Math.max(...gs), rest = gs[0]+gs[1]+gs[2]-mx;
+    if (mx >= rest - 1e-9) return imp(`가장 긴 변(${fmt(mx)}cm)이 나머지 두 변의 합(${fmt(rest)}cm)보다 짧아야 삼각형이 만들어져요.`);
+    const t = fromSSS(gs);
+    if (state.right && Math.abs(t.ang[2]-90) > 1) return imp(`세 변으로 그리면 ∠C가 ${fmt(t.ang[2])}°라서 직각이 되지 않아요.`);
+    for (const i of KA) if (Math.abs(t.ang[i]-ga[i]) > 1)
+      return imp(`주어진 정보끼리 맞지 않아요. 세 변으로 그리면 ∠${V[i]}는 ${fmt(t.ang[i])}°인데 ${fmt(ga[i])}°로 주어졌어요.`);
+    return {status:'unique', t, rule:'SSS'};
+  }
+
+  if (ang){
+    if (!KS.length) return {status:'similar', ang};
+    const i = KS[0], t = fromAngles(ang, i, gs[i]);
+    for (const j of KS.slice(1)) if (!near(t.side[j], gs[j]))
+      return imp(`주어진 정보끼리 맞지 않아요. 계산하면 변 ${SN[j]}는 ${fmt(t.side[j])}cm인데 ${fmt(gs[j])}cm로 주어졌어요.`);
+    const rule = (KA.length === 3 || ends(i).every(v => ga[v] != null)) ? 'ASA' : 'AAS';
+    return {status:'unique', t, rule, sideIdx:i};
+  }
+
+  if (KS.length === 2 && KA.length === 1){
+    const x = KA[0], t3 = [0,1,2].find(i => !KS.includes(i));
+    if (x === t3){
+      const [i,j] = KS, s = [...gs];
+      s[t3] = Math.sqrt(gs[i]**2 + gs[j]**2 - 2*gs[i]*gs[j]*Math.cos(ga[x]*DEG));
+      return {status:'unique', t:fromSSS(s), rule:'SAS'};
+    }
+    const o = KS.find(i => i !== x);
+    const sinO = gs[o]*Math.sin(ga[x]*DEG)/gs[x];
+    const short = `∠${V[x]}와 마주 보는 변 ${SN[x]}가 너무 짧아서 삼각형이 닫히지 않아요.`;
+    if (sinO > 1 + 1e-9) return imp(short);
+    const O1 = Math.asin(Math.min(1, sinO))/DEG;
+    let cands = [O1, 180-O1].filter(O => O > 1e-6 && ga[x]+O < 180-1e-6);
+    if (cands.length === 2 && Math.abs(cands[0]-cands[1]) < 1e-3) cands = [cands[0]];
+    if (!cands.length) return imp(short);
+    const tris = cands.map(O => { const a = [0,0,0]; a[x] = ga[x]; a[o] = O; a[t3] = 180-ga[x]-O; return fromAngles(a, x, gs[x]); });
+    if (tris.length === 1) return {status:'unique', t:tris[0], rule:'SSA1', x, o};
+    return {status:'two', pair2:tris, x, o};
+  }
+  return {status:'many'};
+}
+
+/* ---------- 예시 만들기 ---------- */
+function alignPair(g){
+  if (state.right) return [1,2];
+  const P = {2:[0,1], 0:[1,2], 1:[0,2]};
+  for (const i of [2,0,1]) if (g.side[i] != null) return P[i];
+  for (const v of [0,1,2]) if (g.ang[v] != null) return [v, (v+1)%3];
+  return [0,1];
+}
+function baseAngles(ga, ref){
+  const g = ga.findIndex(x => x != null);
+  if (g < 0) return [...ref];
+  const others = [0,1,2].filter(i => i !== g), sum = ref[others[0]] + ref[others[1]];
+  const out = [0,0,0]; out[g] = ga[g];
+  others.forEach(i => out[i] = (180-ga[g])*ref[i]/sum);
+  return out;
+}
+function randomRef(j, big){
+  for (let n = 0; n < 50; n++){
+    const A = big ? j(30,80) : j(38,65), B = big ? j(30,85) : j(45,75), C = 180-A-B;
+    if (C >= (big ? 25 : 45) && C <= (big ? 110 : 90)) return [A,B,C];
+  }
+  return [...REF];
+}
+function makeSamples(c){
+  const g = c.g, KA = idx(g.ang), KS = idx(g.side), big = state.mode === 'diverse';
+  const r = rng(state.seed*9973 + (big ? 17 : 5)), j = (lo,hi) => lo + (hi-lo)*r();
+  const D = state.seed === 0
+    ? (big ? [0,-22,26] : [0,-5,6])
+    : (big ? [j(-6,6), -j(15,26), j(16,28)] : [j(-1.5,1.5), -j(3,7), j(4,8)]);
+  const L = state.seed === 0
+    ? (big ? [8,5.5,10.5] : [8,7.2,8.8])
+    : (big ? [j(7,9), j(4.5,6), j(10,12)] : [j(7.6,8.4), j(6.8,7.4), j(8.6,9.2)]);
+  const baseSide = 3 - c.pair[0] - c.pair[1];
+  const ref = state.seed === 0 ? REF : randomRef(j, big);
+  const Lf = state.seed === 0 ? 1 : j(0.8, 1.2);
+
+  if (c.status === 'similar') return L.map(l => fromAngles(c.ang, baseSide, Math.round(l*Lf*10)/10));
+
+  if (KS.length === 2 && KA.length === 0){
+    const t3 = [0,1,2].find(i => !KS.includes(i)), [p,q] = KS;
+    return D.map(d => {
+      const th = clamp(ref[t3]+d, 15, 155), s = [...g.side];
+      s[t3] = Math.sqrt(g.side[p]**2 + g.side[q]**2 - 2*g.side[p]*g.side[q]*Math.cos(th*DEG));
+      return fromSSS(s);
+    });
+  }
+  const base = baseAngles(g.ang, ref), free = [0,1,2].filter(i => g.ang[i] == null);
+  const pairs = free.length === 3 ? [[0,1],[0,1],[1,2]] : [[free[0],free[1]],[free[0],free[1]],[free[0],free[1]]];
+  return D.map((d,k) => {
+    let a, dd = d;
+    for (let n = 0; n < 8; n++){
+      a = [...base]; const [p,q] = pairs[k]; a[p] += dd; a[q] -= dd;
+      if (a.every(x => x >= 12 && x <= 150)) break;
+      dd /= 2;
+    }
+    return KS.length === 1 ? fromAngles(a, KS[0], g.side[KS[0]]) : fromAngles(a, baseSide, Math.round(L[k]*Lf*10)/10);
+  });
+}
+function buildTris(){
+  const c = current;
+  if (c.status === 'unique') c.tris = [c.t, c.t, c.t];
+  else if (c.status === 'two'){
+    const P = [[0,1,0],[1,0,0],[0,0,1],[1,0,1],[0,1,1],[1,1,0]];
+    c.pattern = state.seed === 0 ? P[0] : P[state.seed % P.length];
+    c.tris = c.pattern.map(i => c.pair2[i]);
+  }
+  else if (c.status === 'many' || c.status === 'similar') c.tris = makeSamples(c);
+  else c.tris = null;
+}
+
+/* ---------- 그리기 ---------- */
+function pts(t){
+  const [A] = t.ang, [, b, c] = t.side;
+  return [[0,0],[c,0],[b*Math.cos(A*DEG), b*Math.sin(A*DEG)]];
+}
+function align(p, P, Q){
+  const R = 3-P-Q, [px,py] = p[P], dx = p[Q][0]-px, dy = p[Q][1]-py, L = Math.hypot(dx,dy);
+  const co = dx/L, si = dy/L;
+  let out = p.map(([x,y]) => { const X = x-px, Y = y-py; return [X*co + Y*si, -X*si + Y*co]; });
+  if (out[R][1] < 0) out = out.map(([x,y]) => [x,-y]);
+  return out;
+}
+const unit = (x,y) => { const l = Math.hypot(x,y) || 1; return [x/l, y/l]; };
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+
+function txt(x, y, s, o = {}){
+  const st = `fill:${o.color || 'var(--ink)'};font-weight:${o.w || 600};font-size:${o.size || 14}px`;
+  return `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" text-anchor="${o.anchor || 'middle'}" dominant-baseline="central" style="${st}">${esc(s)}</text>`;
+}
+
+// 재어 본 각도 표시: 주문한 각이 모두 정수이면 정수로, 세 각의 합이 180°가 되도록 맞춤
+function angleLabels(t, g){
+  const given = g.ang;
+  const hasDec = given.some(v => v != null && Math.abs(v - Math.round(v)) > 1e-9);
+  if (hasDec) return t.ang.map((a,i) => fmt(given[i] != null ? given[i] : a));
+  const out = t.ang.map((a,i) => given[i] != null ? given[i] : Math.floor(a + 1e-9));
+  const free = [0,1,2].filter(i => given[i] == null);
+  let rest = 180 - out.reduce((x,y) => x+y, 0);
+  if (rest < 0 || rest > free.length) return t.ang.map((a,i) => String(given[i] != null ? given[i] : Math.round(a)));
+  free.sort((i,j) => (t.ang[j] - Math.floor(t.ang[j] + 1e-9)) - (t.ang[i] - Math.floor(t.ang[i] + 1e-9)));
+  for (const i of free){ if (rest <= 0) break; out[i]++; rest--; }
+  return out.map(String);
+}
+
+function triSVG(t, P, s, col, k, ov){
+  const g = current.g, rev = state.revealed, AL = angleLabels(t, g);
+  const cx = (P[0][0]+P[1][0]+P[2][0])/3, cy = (P[0][1]+P[1][1]+P[2][1])/3;
+  const dash = ov ? ['', '9 6', '2 6'][k] : '';
+  let out = `<polygon points="${P.map(p => p[0].toFixed(1)+','+p[1].toFixed(1)).join(' ')}" style="fill:${col};fill-opacity:${ov ? 0.07 : 0.11};stroke:none"/>`;
+
+  // 변
+  let labels = '';
+  for (let i = 0; i < 3; i++){
+    const [u,w] = ends(i), gv = g.side[i] != null;
+    out += `<line x1="${P[u][0].toFixed(1)}" y1="${P[u][1].toFixed(1)}" x2="${P[w][0].toFixed(1)}" y2="${P[w][1].toFixed(1)}" style="stroke:${col};stroke-width:${gv ? 4.5 : 2.2};stroke-linecap:round;stroke-dasharray:${dash}"/>`;
+    if (ov) continue;
+    const mx = (P[u][0]+P[w][0])/2, my = (P[u][1]+P[w][1])/2;
+    let [nx,ny] = unit(-(P[w][1]-P[u][1]), P[w][0]-P[u][0]);
+    if (nx*(mx-cx) + ny*(my-cy) < 0){ nx = -nx; ny = -ny; }
+    const anchor = nx > 0.35 ? 'start' : nx < -0.35 ? 'end' : 'middle';
+    const off = anchor === 'middle' ? 15 : 10 + 9*Math.abs(ny);
+    const label = gv ? fmt(g.side[i])+'cm' : rev ? fmt(t.side[i])+'cm' : '?';
+    labels += txt(mx+nx*off, my+ny*off, label, {anchor, color: gv ? col : rev ? 'var(--ink-2)' : 'var(--muted)', w: gv ? 700 : rev ? 500 : 600, size: gv ? 15 : 14});
+  }
+
+  // 각
+  const r = clamp(0.55*s, 15, 24);
+  for (let v = 0; v < 3; v++){
+    const [a,b] = [(v+1)%3, (v+2)%3], V0 = P[v];
+    const u1 = unit(P[a][0]-V0[0], P[a][1]-V0[1]), u2 = unit(P[b][0]-V0[0], P[b][1]-V0[1]);
+    const gv = g.ang[v] != null, deg = t.ang[v];
+    if (ov && !(gv && k === 0)) continue;
+    const stroke = gv ? col : 'var(--muted)';
+    if (Math.abs(deg-90) < 0.05){
+      const q = r*0.72;
+      const p1 = [V0[0]+q*u1[0], V0[1]+q*u1[1]], p3 = [V0[0]+q*u2[0], V0[1]+q*u2[1]], p2 = [p1[0]+q*u2[0], p1[1]+q*u2[1]];
+      if (gv) out += `<polygon points="${[V0,p1,p2,p3].map(p => p.join(',')).join(' ')}" style="fill:${col};fill-opacity:.22"/>`;
+      out += `<polyline points="${[p1,p2,p3].map(p => p.join(',')).join(' ')}" style="fill:none;stroke:${stroke};stroke-width:${gv ? 2 : 1.3}"/>`;
+    } else {
+      const sx = V0[0]+r*u1[0], sy = V0[1]+r*u1[1], ex = V0[0]+r*u2[0], ey = V0[1]+r*u2[1];
+      const sweep = (u1[0]*u2[1] - u1[1]*u2[0]) > 0 ? 1 : 0;
+      if (gv) out += `<path d="M${V0[0]},${V0[1]} L${sx},${sy} A${r},${r} 0 0 ${sweep} ${ex},${ey} Z" style="fill:${col};fill-opacity:.22;stroke:none"/>`;
+      out += `<path d="M${sx},${sy} A${r},${r} 0 0 ${sweep} ${ex},${ey}" style="fill:none;stroke:${stroke};stroke-width:${gv ? 2 : 1.3}"/>`;
+    }
+    if (ov) continue;
+    const [bx,by] = unit(u1[0]+u2[0], u1[1]+u2[1]);
+    const dist = r + 15 + Math.max(0, 30-deg)*0.9;
+    const label = gv ? fmt(g.ang[v])+'°' : rev ? AL[v]+'°' : '?';
+    labels += txt(V0[0]+bx*dist, V0[1]+by*dist, label, {color: gv ? col : rev ? 'var(--ink-2)' : 'var(--muted)', w: gv ? 700 : rev ? 500 : 600, size: 13});
+  }
+
+  // 꼭짓점 이름
+  for (let v = 0; v < 3; v++){
+    if (ov && k > 0 && ovShared[v]) continue;
+    const [ux,uy] = unit(P[v][0]-cx, P[v][1]-cy);
+    labels += txt(P[v][0]+ux*17, P[v][1]+uy*17, V[v], {color: ov && !ovShared[v] ? col : 'var(--ink)', w:700, size:16});
+  }
+  return out + labels;
+}
+
+function draw(){
+  const sheet = $('#sheet');
+  const c = current;
+  if (!c || !c.tris){
+    const msg = !c || c.status === 'empty'
+      ? (state.right ? '<b>직각 말고도 정보가 필요해요</b>변의 길이나 예각의 크기를 하나 이상 적고 ‘삼각형 만들기’를 누르세요.'
+                     : '<b>주문서가 비어 있어요</b>변의 길이나 각의 크기를 하나 이상 적고 ‘삼각형 만들기’를 누르세요.')
+      : `<b>이런 삼각형은 만들 수 없어요</b>${esc(c.reason)}`;
+    sheet.innerHTML = `<div class="empty">${msg}</div>`;
+    return;
+  }
+  const W = Math.max(280, sheet.clientWidth || 700);
+  const shapes = c.tris.map(t => {
+    let p = align(pts(t), c.pair[0], c.pair[1]);
+    if (state.right && state.overlay) p = p.map(([x,y]) => [x - p[2][0], y - p[2][1]]);
+    const xs = p.map(q => q[0]);
+    return {t, p, minX:Math.min(...xs), maxX:Math.max(...xs), maxY:Math.max(...p.map(q => q[1]))};
+  });
+  ovShared = [0,1,2].map(v => shapes.every(o => Math.hypot(o.p[v][0]-shapes[0].p[v][0], o.p[v][1]-shapes[0].p[v][1]) < 0.01));
+  const n = shapes.length, pad = 40, padT = 56, padB = state.overlay ? 50 : 70, gap = 56;
+  const ov = state.overlay;
+  let s, place = [], Wpx = W, Hpx;
+
+  if (ov){
+    const minX = Math.min(...shapes.map(o => o.minX)), maxX = Math.max(...shapes.map(o => o.maxX)), maxY = Math.max(...shapes.map(o => o.maxY));
+    s = Math.min((W-2*pad)/(maxX-minX), (420-padT-padB)/maxY, 46);
+    const ox = Math.round(pad - minX*s + ((W-2*pad) - (maxX-minX)*s)/2), by = padT + maxY*s;
+    place = shapes.map(() => ({ox, by}));
+    Hpx = by + padB;
+  } else {
+    const sumW = shapes.reduce((a,o) => a + (o.maxX-o.minX), 0), maxY = Math.max(...shapes.map(o => o.maxY));
+    s = Math.min((W-2*pad-gap*(n-1))/sumW, (380-padT-padB)/maxY, 46);
+    if (s >= 15 || n === 1){
+      const by = padT + maxY*s;
+      let cur = pad + Math.max(0, (W - 2*pad - gap*(n-1) - sumW*s)/2), gx = null;
+      shapes.forEach(o => {
+        let ox = cur - o.minX*s;
+        if (gx === null) gx = ox; else ox = gx + Math.ceil((ox-gx)/s)*s;
+        place.push({ox, by});
+        cur = ox + o.maxX*s + gap;
+      });
+      Wpx = Math.max(W, cur - gap + pad);
+      Hpx = by + padB;
+    } else {
+      const maxW = Math.max(...shapes.map(o => o.maxX-o.minX));
+      s = Math.min((W-2*pad)/maxW, 46);
+      let top = 0, gy = null;
+      shapes.forEach(o => {
+        let by = top + padT + o.maxY*s;
+        if (gy === null) gy = by; else by = gy + Math.ceil((by-gy)/s)*s;
+        const ox0 = pad - o.minX*s + ((W-2*pad) - (o.maxX-o.minX)*s)/2;
+        place.push({ox: ox0, by});
+        top = by + padB;
+      });
+      const gx = place[0].ox;
+      place.forEach(p => p.ox = gx + Math.round((p.ox-gx)/s)*s);
+      Hpx = top;
+    }
+  }
+
+  const gx = place[0].ox, gy = place[0].by;
+  let svg = `<svg viewBox="0 0 ${Wpx.toFixed(0)} ${Hpx.toFixed(0)}" role="img" aria-label="주문대로 그린 삼각형">
+  <defs>
+    <pattern id="g1" width="${s}" height="${s}" patternUnits="userSpaceOnUse" x="${gx}" y="${gy}">
+      <path d="M${s} 0 L0 0 L0 ${s}" style="fill:none;stroke:var(--grid);stroke-width:1"/></pattern>
+    <pattern id="g5" width="${5*s}" height="${5*s}" patternUnits="userSpaceOnUse" x="${gx}" y="${gy}">
+      <path d="M${5*s} 0 L0 0 L0 ${5*s}" style="fill:none;stroke:var(--grid-5);stroke-width:1.2"/></pattern>
+  </defs>
+  <rect width="100%" height="100%" fill="url(#g1)"/><rect width="100%" height="100%" fill="url(#g5)"/>`;
+
+  shapes.forEach((o,k) => {
+    const {ox, by} = place[k];
+    const P = o.p.map(([x,y]) => [ox + x*s, by - y*s]);
+    svg += triSVG(o.t, P, s, COL[k], k, ov);
+    if (!ov) svg += txt(ox + (o.minX+o.maxX)/2*s, by + 46, NAME() + ' ' + NUM[k], {color:COL[k], w:700, size:15});
+  });
+  if (ov){
+    const by = place[0].by;
+    shapes.forEach((o,k) => {
+      const x = Wpx/2 - 150 + k*110;
+      svg += `<line x1="${x}" y1="${by+36}" x2="${x+28}" y2="${by+36}" style="stroke:${COL[k]};stroke-width:3;stroke-dasharray:${['','9 6','2 6'][k]}"/>`;
+      svg += txt(x+36, by+36, '삼각형 ' + NUM[k], {anchor:'start', color:COL[k], w:700, size:14});
+    });
+  }
+  svg += '</svg>';
+  sheet.innerHTML = svg + `<span class="scale-note">모눈 한 칸 = 1cm</span>`;
+}
+
+/* ---------- 판정 ---------- */
+function verdict(c){
+  const KA = idx(c.g.ang), n = KA.length + idx(c.g.side).length - (state.right ? 1 : 0);
+  const pre = state.right ? '직각 말고 ' : '';
+  if (state.right) { const v = rightVerdict(c, n); if (v) return v; }
+  if (c.status === 'unique'){
+    if (c.rule === 'SSA1'){
+      const right = Math.abs(c.g.ang[c.x]-90) < 1e-6;
+      return {tone:'var(--ok)', mark:'O', title:`세 ${NAME()}이 모두 같아요`,
+        body:`두 변과 끼이지 않은 각이 주어졌지만, ∠${V[c.x]}와 마주 보는 변 ${SN[c.x]}가 다른 변 ${SN[c.o]}보다 길어서 이번에는 삼각형이 하나로 정해졌어요.`,
+        rule: right ? '<b>직각이라면?</b> 직각과 마주 보는 변(빗변)은 늘 가장 긴 변이라 언제나 하나로 정해져요. 직각삼각형의 합동조건(RHS)으로 이어지는 이야기예요.'
+                    : '<b>늘 그럴까요?</b> 마주 보는 변이 더 짧으면 서로 다른 삼각형이 두 개 생길 수 있어요. ‘두 변과 끼이지 않은 각’ 주문으로 확인해 보세요.'};
+    }
+    let rule;
+    if (c.rule === 'AAS'){
+      const d = [0,1,2].find(i => c.g.ang[i] == null), gv = KA.map(i => fmt(c.g.ang[i])+'°');
+      rule = `<b>ASA 합동과 같아요</b> 나머지 한 각은 ∠${V[d]} = 180° − ${gv[0]} − ${gv[1]} = ${fmt(c.t.ang[d])}°로 저절로 정해져요. 결국 한 변과 그 양 끝 각을 아는 셈이에요.`;
+    } else {
+      rule = `<b>${RULES[c.rule][0]}</b> ${RULES[c.rule][1]}`;
+    }
+    return {tone:'var(--ok)', mark:'O', title:`세 ${NAME()}이 모두 같아요`,
+      body:`이 주문이면 누가 그려도 ${NAME()}이 하나로 정해져요. ${pre}정보 ${n}개만 확인했는데 나머지 정보는 재지 않아도 저절로 같아져요.`, rule};
+  }
+  if (c.status === 'two'){
+    return {tone:'var(--t1)', mark:'X', title:'서로 다른 삼각형이 두 개 나와요',
+      body:(() => {
+        const pt = c.pattern, odd = [0,1,2].find(k => pt.filter(x => x === pt[k]).length === 1), [a,b] = [0,1,2].filter(k => k !== odd);
+        return `세 삼각형 모두 주어진 정보 ${n}개는 같아요. 그런데 ${NUM[a]}${a === 1 ? '와' : '과'} ${NUM[b]}${b === 1 ? '는' : '은'} 같은 삼각형이고 ${NUM[odd]}${odd === 1 ? '는' : '은'} 달라요.`;
+      })(),
+      rule:(() => { const t3 = 3 - c.x - c.o; return `<b>왜 두 개일까요?</b> ∠${V[c.x]}는 두 변 ${SN[c.x]}, ${SN[c.o]}의 끼인각이 아니에요. ${V[t3]}를 중심으로 반지름 ${fmt(c.g.side[c.x])}cm인 원을 그리면, ∠${V[c.x]}의 다른 변과 두 점에서 만나요. ‘겹쳐 보기’로 확인해 보세요.`; })()};
+  }
+  if (c.status === 'similar'){
+    const derived = KA.length === 2 ? (() => { const d = [0,1,2].find(i => c.g.ang[i] == null); return ` 두 각을 알면 나머지 한 각(∠${V[d]} = ${fmt(c.ang[d])}°)도 정해지지만,`; })() : '';
+    return {tone:'var(--t1)', mark:'X', title:'모양은 같지만 크기가 달라요',
+      body:`세 삼각형의 각은 모두 같지만 변의 길이가 달라요.${derived} 길이에 대한 정보가 하나도 없어서 크기가 정해지지 않아요.`,
+      rule:'<b>합동이 아니에요</b> 크기까지 같아야 합동이에요. 모양만 같은 관계는 나중에 ‘닮음’에서 배워요.'};
+  }
+  // many
+  let why = '주어진 정보만으로는 나머지 정보가 정해지지 않아요.';
+  const KS = idx(c.g.side);
+  if (KS.length === 2 && KA.length === 0){
+    const t3 = [0,1,2].find(i => !KS.includes(i));
+    why = `두 변 사이의 각 ∠${V[t3]}를 정해 주지 않아서, 그 각을 벌리거나 좁히는 만큼 다른 삼각형이 생겨요.`;
+  } else if (n === 1){
+    why = '정보 1개로는 나머지 5개가 하나도 정해지지 않아요.';
+  }
+  return {tone:'var(--t1)', mark:'X', title:'삼각형이 하나로 정해지지 않아요',
+    body:`${pre}주어진 정보 ${n}개는 세 ${NAME()} 모두 같지만, 나머지 정보는 서로 달라요. 이 주문으로는 ${NAME()}을 얼마든지 다르게 그릴 수 있어요.`,
+    rule:`<b>왜 그럴까요?</b> ${why}`};
+}
+
+function rightVerdict(c, n){
+  const ok = 'var(--ok)', bad = 'var(--t1)';
+  const acuteGiven = [0,1].filter(i => c.g.ang[i] != null);
+  if (c.status === 'unique' && (c.rule === 'RHA' || c.rule === 'RHS' || c.rule === 'SAS')){
+    let rule;
+    if (c.rule === 'RHA'){
+      const extra = acuteGiven.length === 1
+        ? (() => { const gi = acuteGiven[0], d = 1-gi; return ` 나머지 예각은 ∠${V[d]} = 90° − ${fmt(c.g.ang[gi])}° = ${fmt(c.t.ang[d])}°로 저절로 정해져요. 결국 빗변과 그 양 끝 각을 아는 셈이라 ASA와 같아요.`; })()
+        : '';
+      rule = `<b>RHA 합동</b> 빗변의 길이와 한 예각의 크기가 각각 같으면 직각삼각형은 하나로 정해져요.${extra}`;
+    } else if (c.rule === 'RHS'){
+      rule = '<b>RHS 합동</b> 빗변의 길이와 다른 한 변의 길이가 각각 같으면 직각삼각형은 하나로 정해져요. 일반 삼각형에서 ‘두 변과 끼이지 않은 각’은 삼각형이 두 개 생길 수 있었지만, 그 각이 직각이면 마주 보는 빗변이 가장 긴 변이라 하나만 생겨요.';
+    } else {
+      rule = '<b>SAS 합동</b> 직각을 낀 두 변의 길이가 같으면, 두 변과 그 끼인각(직각)이 같은 셈이에요.';
+    }
+    return {tone:ok, mark:'O', title:'세 직각삼각형이 모두 같아요',
+      body:`이 주문이면 누가 그려도 직각삼각형이 하나로 정해져요. 직각 말고 정보 ${n}개만 확인했는데 나머지는 재지 않아도 저절로 같아져요.`, rule};
+  }
+  if (c.status === 'similar'){
+    const gi = acuteGiven[0], d = 1-gi;
+    const derived = acuteGiven.length === 1 ? ` 한 예각을 알면 나머지 예각도 정해지지만(∠${V[d]} = ${fmt(c.ang[d])}°),` : ' 두 예각을 모두 알아도';
+    return {tone:bad, mark:'X', title:'모양은 같지만 크기가 달라요',
+      body:`세 직각삼각형의 각은 모두 같지만 변의 길이가 달라요.${derived} 길이 정보가 없어서 크기가 정해지지 않아요.`,
+      rule:'<b>합동이 아니에요</b> 크기까지 같아야 합동이에요. 직각삼각형이라도 길이 정보가 하나는 있어야 해요.'};
+  }
+  if (c.status === 'many'){
+    const KS = idx(c.g.side);
+    let why = '직각 말고 정보 1개로는 나머지가 정해지지 않아요.';
+    if (KS.length === 1 && KS[0] === 2) why = '빗변의 길이만 같으면 직각을 낀 두 변의 길이가 얼마든지 달라질 수 있어요. ‘겹쳐 보기’를 누르면 빗변이 사다리처럼 미끄러지는 모습을 볼 수 있어요.';
+    else if (KS.length === 1) why = `직각을 낀 변 ${SN[KS[0]]}만으로는 다른 변의 길이와 예각의 크기가 정해지지 않아요.`;
+    return {tone:bad, mark:'X', title:'직각삼각형이 하나로 정해지지 않아요',
+      body:`직각 말고 주어진 정보 ${n}개는 세 직각삼각형 모두 같지만, 나머지 정보는 서로 달라요. 직각을 알고 있어도 정보 하나 더로는 부족해요.`,
+      rule:`<b>왜 그럴까요?</b> ${why}`};
+  }
+  return null;
+}
+
+/* ---------- 화면 갱신 ---------- */
+function orderText(g){
+  const parts = [];
+  FIELDS.forEach(f => { if (state.right && f.key === 'C') return; const v = g[f.kind][f.i]; if (v != null) parts.push(`${f.label} = ${fmt(v)}${f.unit}`); });
+  return parts.join(', ');
+}
+function render(){
+  const c = current;
+  const ot = c ? orderText(c.g) : '';
+  $('#orderLine').innerHTML = ot ? `<span class="k">주문</span>${esc(ot)}인 ${NAME()}${state.right ? ' <span class="k">(∠C = 90°)</span>' : ''}` : '<span class="k">주문</span>아직 없음';
+  const drawable = c && c.tris;
+  $('#prompt').textContent = drawable
+    ? (state.revealed ? '재어 본 값이 나타났어요. 색깔로 진하게 표시된 것은 주문서에 적은 정보예요.'
+                      : `세 친구가 이 주문대로 ${NAME()}을 그렸어요. 세 ${NAME()}은 모두 같은 ${NAME()}이라고 할 수 있을까요?`)
+    : '';
+  $('#tools').hidden = !drawable;
+  const variable = drawable && (c.status === 'many' || c.status === 'similar');
+  $('#seg').hidden = !variable;
+  $('#reveal').textContent = state.revealed ? '다시 가리기' : '재어 보기';
+  $('#overlay').setAttribute('aria-pressed', String(state.overlay));
+  document.querySelectorAll('#seg button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.mode === state.mode)));
+
+  const vd = $('#verdict');
+  if (drawable && state.revealed){
+    const v = verdict(c);
+    vd.style.setProperty('--tone', v.tone);
+    vd.innerHTML = `<div class="mark" aria-hidden="true">${v.mark}</div><h3>${v.title}</h3><p>${v.body}</p><p class="rule">${v.rule}</p>`;
+    vd.hidden = false; vd.classList.remove('show'); void vd.offsetWidth; vd.classList.add('show');
+  } else vd.hidden = true;
+  draw();
+}
+
+/* ---------- 주문서 ---------- */
+function buildForm(){
+  FIELDS.forEach(f => {
+    const row = document.createElement('div');
+    row.className = 'row off'; row.id = 'row-'+f.key;
+    row.innerHTML = `<label class="nm" for="in-${f.key}">${f.label}${f.key === 'AB' ? '<span class="hyp" hidden>빗변</span>' : ''}</label>
+      <div class="num"><input id="in-${f.key}" type="number" inputmode="decimal" step="0.1" min="0" aria-label="${f.label} ${f.kind === 'ang' ? '크기' : '길이'}"><span class="unit">${f.unit}</span></div>
+      <label class="none"><input type="checkbox" id="no-${f.key}" checked>주어지지 않음</label>${f.key === 'C' ? '<span class="fixed-tag" hidden>직각으로 고정</span>' : ''}`;
+    $(f.kind === 'ang' ? '#fs-ang' : '#fs-side').appendChild(row);
+    const inp = row.querySelector('input[type=number]'), no = row.querySelector('input[type=checkbox]');
+    inp.addEventListener('input', () => { if (inp.value.trim() !== '') no.checked = false; sync(); });
+    inp.addEventListener('blur', () => { if (inp.value.trim() === '') { no.checked = true; sync(); } });
+    inp.addEventListener('keydown', e => { if (e.key === 'Enter') make(true); });
+    no.addEventListener('change', () => { if (no.checked) inp.value = ''; else inp.focus(); sync(); });
+  });
+  buildPresets();
+}
+function buildPresets(){
+  const box = $('#presetBox');
+  box.innerHTML = '';
+  (state.right ? PRESETS_RIGHT : PRESETS).forEach(([gl, items]) => {
+    const grp = document.createElement('div'); grp.className = 'pgroup';
+    grp.innerHTML = `<div class="gl">${gl}</div><div class="chips"></div>`;
+    items.forEach(([name, vals]) => {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'chip'; b.textContent = name;
+      b.addEventListener('click', () => { fill(vals); make(true); });
+      grp.querySelector('.chips').appendChild(b);
+    });
+    box.appendChild(grp);
+  });
+}
+function fill(vals){
+  FIELDS.forEach(f => {
+    if (state.right && f.key === 'C') return;
+    const v = vals[f.key];
+    $('#in-'+f.key).value = v != null ? v : '';
+    $('#no-'+f.key).checked = v == null;
+  });
+  sync();
+}
+function readForm(){
+  const g = {ang:[null,null,null], side:[null,null,null]}; let err = null;
+  if (state.right) g.ang[2] = 90;
+  FIELDS.forEach(f => {
+    if (state.right && f.key === 'C') return;
+    if ($('#no-'+f.key).checked) return;
+    const raw = $('#in-'+f.key).value.trim();
+    if (raw === '') return;
+    const v = Number(raw);
+    if (!isFinite(v)) { err = err || `${f.label}에 숫자를 적어 주세요.`; return; }
+    g[f.kind][f.i] = v;
+  });
+  return {g, err};
+}
+function sync(){
+  const {g} = readForm();
+  FIELDS.forEach(f => $('#row-'+f.key).classList.toggle('off', !(state.right && f.key === 'C') && g[f.kind][f.i] == null));
+  const n = idx(g.ang).length + idx(g.side).length;
+  $('#countLine').innerHTML = state.right ? `직각 말고 주어진 정보 <b>${n-1}</b>개` : `주어진 정보 <b>${n}</b>개 / 6개`;
+}
+function make(fromUser){
+  const {g, err} = readForm();
+  state.seed = fromUser ? (Math.random()*1e9|0) + 1 : 0; state.revealed = false; state.overlay = false;
+  $('#formErr').textContent = err || '';
+  if (err){ current = {status:'impossible', reason:err, g, tris:null}; render(); return; }
+  const res = solve(g);
+  current = Object.assign(res, {g, pair: alignPair(g)});
+  buildTris();
+  render();
+  if (fromUser && window.innerWidth < 920) $('#orderLine').scrollIntoView({behavior: matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block:'start'});
+}
+
+function setKind(kind){
+  state.right = kind === 'right';
+  document.querySelectorAll('.modes button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.kind === kind)));
+  $('#sub').textContent = SUB[kind];
+  const rowC = $('#row-C'), inC = $('#in-C'), noC = $('#no-C');
+  rowC.classList.toggle('fixed', state.right);
+  inC.disabled = state.right; noC.disabled = state.right;
+  inC.value = state.right ? 90 : ''; noC.checked = !state.right;
+  rowC.querySelector('.none').hidden = state.right;
+  rowC.querySelector('.fixed-tag').hidden = !state.right;
+  $('#row-AB .hyp').hidden = !state.right;
+  buildPresets();
+  fill(state.right ? {AB:10} : {AB:8});
+  make(false);
+}
+
+/* ---------- 이벤트 ---------- */
+buildForm();
+document.querySelectorAll('.modes button').forEach(b => b.addEventListener('click', () => { if ((b.dataset.kind === 'right') !== state.right) setKind(b.dataset.kind); }));
+$('#make').addEventListener('click', () => make(true));
+$('#reveal').addEventListener('click', () => { state.revealed = !state.revealed; render(); });
+$('#overlay').addEventListener('click', () => { state.overlay = !state.overlay; render(); });
+document.querySelectorAll('#seg button').forEach(b => b.addEventListener('click', () => {
+  state.mode = b.dataset.mode; state.seed = (Math.random()*1e9|0) + 1; state.revealed = false; buildTris(); render();
+}));
+let rt; new ResizeObserver(() => { clearTimeout(rt); rt = setTimeout(draw, 60); }).observe($('#sheet'));
+
+fill({AB:8});
+make();
+})();
+</script>
+</body>
+</html>
